@@ -1,47 +1,48 @@
 namespace DotTja;
 
-using System.Collections.Immutable;
-
-using Pidgin;
-using static Pidgin.Parser;
-using static Pidgin.Parser<char>;
-
+using Exceptions;
 using Types;
+using Types.Builders;
 
 internal static class Parser
 {
-    private static readonly Parser<char, string> UntilEndOfLine = Any.Until(EndOfLine).Map(string.Concat);
+    private static string ReadLineOrThrow(this TextReader reader) =>
+        reader.ReadLine() ?? throw new ParsingException("Encountered end of stream early!");
 
-    private static readonly Parser<char, Unit> SkipUntilEndOfLine = Any.SkipUntil(EndOfLine);
+    public static TjaFile Deserialize(TextReader reader)
+    {
+        var result = new TjaFileBuilder();
 
-    private static readonly Parser<char, Unit> Comment =
-        Try(SkipWhitespaces.Then(String("//"))).Then(SkipUntilEndOfLine);
+        string line;
 
-    private static readonly Parser<char, char> ColonSeparator =
-        Char(':').Before(Whitespace.Optional());
+        // Parse the
+        while (true)
+        {
+            line = reader.ReadLineOrThrow().Trim();
 
-    private static Parser<char, (string key, string rawValue)> KeyValuePair(
-        Parser<char, string> keyParser
-    ) =>
-        from _ in Comment.SkipMany()
-        from key in keyParser.Before(ColonSeparator)
-        from rawValue in UntilEndOfLine
-        select (key, rawValue);
+            if (line == "" || line.StartsWith("//", StringComparison.InvariantCulture))
+            {
+                continue;
+            }
 
-    private static readonly Parser<char, Metadata> Metadata =
-        KeyValuePair(Uppercase.AtLeastOnceString())
-            .Slice()
-            .Until(KeyValuePair(String("COURSE")));
+            var split = line.Split(':', 2);
 
-    private static readonly Parser<char, ImmutableList<Course>> Courses =
-        from _ in Any.Before(End)
-        select ImmutableList<Course>.Empty;
+            if (split.Length != 2)
+            {
+                throw new ParsingException($"Line missing colon separator: {line}");
+            }
 
-    private static readonly Parser<char, TjaFile> File =
-        from metadata in Metadata
-        from courses in Courses
-        select new TjaFile(metadata, courses);
+            var (key, value) = (split[0].Trim(), split[1].Trim());
 
-    public static TjaFile Deserialize(IEnumerable<char> input) => File.ParseOrThrow(input);
+            if (key == "COURSE")
+            {
+                break;
+            }
 
+            result.Metadata.SetValue(key, value);
+        }
+
+
+        return result.ToTjaFile();
+    }
 }
