@@ -5,12 +5,15 @@ namespace DotTja.Types;
 /// on the user's localization preferences. The <see cref="Default"/>
 /// string is required, but the localized values are not.
 /// </summary>
-/// <param name="Default">
-/// Default value used if translations are not preferred by the user,
-/// or if the preferred translation is not set.
-/// </param>
-public record LocalizedString(string Default)
+
+public record LocalizedString
 {
+    /// <summary>
+    /// Default value used if translations are not preferred by the user,
+    /// or if the preferred translation is not set.
+    /// </summary>
+    public string? Default { get; init; }
+
     /// <summary>
     /// Japanese localized value.
     /// </summary>

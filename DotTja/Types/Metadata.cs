@@ -4,16 +4,15 @@ using Enums;
 
 /// <summary>
 /// Represents the level file's metadata, attempting to a one-to-one representation.
-/// Doesn't include any validation, nor default value handling, as this is meant
+/// Doesn't include any validation, nor fill any default values, as this is meant
 /// to represent missing fields in the file itself. Thus, most values are optional,
 /// as they are optional as defined in the spec. The exception to this is
 /// <see cref="Title"/> and <see cref="Subtitle"/> as those seem to be mandatory parts of metadata.
 /// </summary>
-public record Metadata(
-    LocalizedString Title,
-    LocalizedString Subtitle
-)
+public record Metadata
 {
+    public LocalizedString Title { get; init; }
+    public LocalizedString Subtitle { get; init; }
     public double? Bpm { get; init; }
     public FileInfo? Wave { get; init; }
     public double? Offset { get; init; }

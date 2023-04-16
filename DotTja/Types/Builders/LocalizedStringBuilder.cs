@@ -1,19 +1,25 @@
 namespace DotTja.Types.Builders;
 
+using System.Collections.Immutable;
+using System.Reflection;
+
 internal class LocalizedStringBuilder
 {
-    public string? Default { get; set; }
-    public string? Ja { get; set; }
-    public string? En { get; set; }
-    public string? Cn { get; set; }
-    public string? Tw { get; set; }
-    public string? Ko { get; set; }
+    private string? Default { get; set; }
+    private string? Ja { get; set; }
+    private string? En { get; set; }
+    private string? Cn { get; set; }
+    private string? Tw { get; set; }
+    private string? Ko { get; set; }
 
-    public LocalizedString ToLocalizedString() =>
-        new(this.Default ?? throw new InvalidOperationException(
-            "Default value was not set before calling ToLocalizedString()."
-        ))
+    public static readonly ImmutableDictionary<string, PropertyInfo> Properties =
+        typeof(LocalizedStringBuilder)
+            .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            .ToImmutableDictionary(p => p.Name.ToUpperInvariant(), p => p);
+
+    public LocalizedString ToLocalizedString() => new()
         {
+            Default = this.Default,
             Ja = this.Ja,
             En = this.En,
             Cn = this.Cn,

@@ -2,9 +2,9 @@ namespace DotTja.Types.Enums;
 
 public enum Side
 {
-    Normal,
+    Normal = 1,
 #pragma warning disable CA1711
-    Ex,
+    Ex = 2,
 #pragma warning restore CA1711
-    Both
+    Both = 3
 }
