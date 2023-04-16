@@ -9,8 +9,16 @@ public class UnitTest1
 {
     private readonly ITestOutputHelper testOutputHelper;
 
-    public UnitTest1(ITestOutputHelper testOutputHelper) =>
+    public UnitTest1(ITestOutputHelper testOutputHelper)
+    {
         this.testOutputHelper = testOutputHelper;
+
+        AssertionOptions.AssertEquivalencyUsing(
+            options => options
+                .Excluding(info => info.DeclaringType == typeof(FileInfo) && info.Name == "Length")
+                .Excluding(info => info.DeclaringType == typeof(DirectoryInfo) && info.Name != "FullName")
+        );
+    }
 
     [Fact]
     public void TryParseAllTestFiles()
@@ -19,61 +27,53 @@ public class UnitTest1
         foreach (var file in dir.EnumerateFiles())
         {
             using var reader = file.OpenText();
-            DotTja.Deserialize(reader);
+            var parsed = DotTja.Deserialize(reader);
+            this.testOutputHelper.WriteLine(parsed.ToString());
         }
     }
 
     [Fact]
     public void Test2()
     {
-        AssertionOptions.AssertEquivalencyUsing(
-            options => options
-                // .ComparingByValue<DirectoryInfo>()
-                // .ComparingByValue<FileInfo>()
-                .ComparingRecordsByValue()
-        );
-
         using var reader = new StreamReader("../../../TestTjas/Colorful Voice (Modified Metadata).tja");
         var parsed = DotTja.Deserialize(reader);
 
-        parsed.Metadata.Title.Should().Be(
-            new LocalizedString
+        parsed.Metadata.Should().BeEquivalentTo(
+            new Metadata
             {
-                Default = "Colorful Voice", Ja = "カラフルボイス", En = "Beans", Cn = "豆子繁體"
+                Title = new LocalizedString
+                {
+                    Default = "Colorful Voice", Ja = "カラフルボイス", En = "Beans", Cn = "豆子繁體"
+                },
+                Subtitle = new LocalizedString
+                {
+                    Default = "--cosMo@bousouP feat. Hatsune Miku & GUMI", Ja = "cosMo@暴走P feat.初音ミク・GUMI"
+                },
+                Bpm = 240,
+                Wave = new FileInfo("Colorful Voice.ogg"),
+                Offset = -2.169,
+                DemoStart = 44.158,
+                Genre = "Oranges",
+                ScoreMode = ScoreMode.AcGen0,
+                Maker = "mom",
+                Lyrics = new FileInfo("熱情のスペクトラム.vtt"),
+                SongVol = 2003,
+                SeVol = 45,
+                Side = Side.Ex,
+                Life = 10023,
+                Game = Game.Jube,
+                HeadScroll = 0.2,
+                BgImage = new FileInfo("123.png"),
+                MovieOffset = 1.5,
+                BgMovie = new FileInfo("Colorful Voice.mp4"),
+                TaikoWebSkin = new TaikoWebSkin(
+                    new DirectoryInfo("../song_skinsd"),
+                    "miku",
+                    "static",
+                    "none",
+                    "fastscroll"
+                )
             }
-        );
-        parsed.Metadata.Subtitle.Should().Be(
-            new LocalizedString
-            {
-                Default = "--cosMo@bousouP feat. Hatsune Miku & GUMI",
-                Ja = "cosMo@暴走P feat.初音ミク・GUMI"
-            }
-        );
-        parsed.Metadata.Bpm.Should().Be(240);
-        parsed.Metadata.Wave.Should().Be(new FileInfo("Colorful Voice.ogg"));
-        parsed.Metadata.Offset.Should().Be(-2.169);
-        parsed.Metadata.DemoStart.Should().Be(44.158);
-        parsed.Metadata.Genre.Should().Be("Oranges");
-        parsed.Metadata.ScoreMode.Should().Be(ScoreMode.AcGen0);
-        parsed.Metadata.Maker.Should().Be("mom");
-        parsed.Metadata.Lyrics.Should().Be(new FileInfo("熱情のスペクトラム.vtt"));
-        parsed.Metadata.SongVol.Should().Be(2003);
-        parsed.Metadata.SeVol.Should().Be(45);
-        parsed.Metadata.Side.Should().Be(Side.Ex);
-        parsed.Metadata.Life.Should().Be(10023);
-        parsed.Metadata.Game.Should().Be(Game.Jube);
-        parsed.Metadata.HeadScroll.Should().Be(0.2);
-        parsed.Metadata.BgImage.Should().Be(new FileInfo("123.png"));
-        parsed.Metadata.MovieOffset.Should().Be(1.5);
-        parsed.Metadata.BgMovie.Should().Be(new FileInfo("Colorful Voice.mp4"));
-        parsed.Metadata.TaikoWebSkin.Should().Be(
-            new TaikoWebSkin(
-                new DirectoryInfo("../song_skins"),
-                "miku",
-                "static",
-                "none",
-                "fastscroll"
-            )
         );
     }
 }
