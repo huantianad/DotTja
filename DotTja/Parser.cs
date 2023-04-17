@@ -3,53 +3,27 @@ namespace DotTja;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Reflection;
-using EnumConverter;
 using Exceptions;
 using Types;
 using Types.Builders;
 
 internal static class Parser
 {
-    private static string ReadLineOrThrow(this TextReader reader) =>
-        reader.ReadLine() ?? throw new ParsingException("Encountered end of stream early!");
-
-    public static TjaFile Deserialize(TextReader reader)
+    public static TjaFile Deserialize(ParserReader reader)
     {
         var result = new TjaFileBuilder();
 
-        var doneParsingMainMetadata = false;
-
         while (true)
         {
-            var line = reader.ReadLineOrThrow().Trim();
-
-            if (line == "" || line.StartsWith("//", StringComparison.InvariantCulture))
-            {
-                continue;
-            }
-
-            var split = line.Split(':', 2);
-            if (split.Length != 2)
-            {
-                throw new ParsingException($"Expected key-value pair, but line is missing colon separator: {line}");
-            }
-
-            var (key, value) = (split[0].Trim(), split[1].Trim());
+            var (key, value) = reader.ReadKeyValuePair()
+                ?? throw new ParsingException("Encountered end of stream when parsing metadata.");
 
             if (key == "COURSE")
-            {
-                doneParsingMainMetadata = true;
-            }
-
-            if (!doneParsingMainMetadata)
-            {
-                ParseLineOfMainMetadata(result.Metadata, key, value);
-            }
-            else
             {
                 break;
             }
 
+            ParseLineOfMainMetadata(result.Metadata, key, value);
         }
 
         return result.ToTjaFile();
@@ -62,18 +36,18 @@ internal static class Parser
             var languageKey = key == "TITLE"
                 ? "DEFAULT"
                 : key["TITLE".Length..];
-            SetValue(metadata.Title, languageKey, value, LocalizedStringBuilder.Properties);
+            SetValue(languageKey, value, metadata.Title, LocalizedStringBuilder.Properties);
         }
         else if (key.StartsWith("SUBTITLE", StringComparison.InvariantCulture))
         {
             var languageKey = key == "SUBTITLE"
                 ? "DEFAULT"
                 : key["SUBTITLE".Length..];
-            SetValue(metadata.Subtitle, languageKey, value, LocalizedStringBuilder.Properties);
+            SetValue(languageKey, value, metadata.Subtitle, LocalizedStringBuilder.Properties);
         }
         else
         {
-            SetValue(metadata, key, value, MetadataBuilder.Properties);
+            SetValue(key, value, metadata, MetadataBuilder.Properties);
         }
     }
 
@@ -130,9 +104,9 @@ internal static class Parser
     }
 
     private static void SetValue(
-        object owner,
         string key,
         string rawValue,
+        object owner,
         IReadOnlyDictionary<string, PropertyInfo> propertiesCache
     )
     {

@@ -1,5 +1,6 @@
 namespace DotTja.Tests;
 
+using Exceptions;
 using FluentAssertions;
 using Types;
 using Types.Enums;
@@ -19,6 +20,8 @@ public class ParserTest
                 .Excluding(info => info.DeclaringType == typeof(DirectoryInfo) && info.Name != "FullPath")
         );
     }
+
+    public static StreamReader TestFile(string name) => new StreamReader($"../../../TestTjas/{name}");
 
     public static IEnumerable<object[]> BundledFiles =>
         new DirectoryInfo("../../../TestTjas")
@@ -51,9 +54,20 @@ public class ParserTest
     }
 
     [Fact]
+    public void EarlyEndExceptions()
+    {
+        using var reader = TestFile("Colorful Voice (No Course).tja");
+        reader.Invoking(DotTja.Deserialize).Should()
+            .Throw<ParsingException>()
+            .WithMessage("Encountered error while parsing at LineNumber = 14, CurrentLine = ''.")
+            .WithInnerException<ParsingException>()
+            .WithMessage("Encountered end of stream when parsing metadata.");
+    }
+
+    [Fact]
     public void CheckSpecific()
     {
-        using var reader = new StreamReader("../../../TestTjas/Colorful Voice (Modified Metadata).tja");
+        using var reader = TestFile("Colorful Voice (Modified Metadata).tja");
         var parsed = DotTja.Deserialize(reader);
 
         parsed.Metadata.Should().BeEquivalentTo(
