@@ -1,39 +1,57 @@
 namespace DotTja.Tests;
 
+using FluentAssertions;
 using Types;
 using Types.Enums;
 using Xunit.Abstractions;
-using FluentAssertions;
 
-public class UnitTest1
+public class ParserTest
 {
     private readonly ITestOutputHelper testOutputHelper;
 
-    public UnitTest1(ITestOutputHelper testOutputHelper)
+    public ParserTest(ITestOutputHelper testOutputHelper)
     {
         this.testOutputHelper = testOutputHelper;
 
         AssertionOptions.AssertEquivalencyUsing(
             options => options
-                .Excluding(info => info.DeclaringType == typeof(FileInfo) && info.Name == "Length")
-                .Excluding(info => info.DeclaringType == typeof(DirectoryInfo) && info.Name != "FullName")
+                .Excluding(info => info.DeclaringType == typeof(FileInfo) && info.Name != "FullPath")
+                .Excluding(info => info.DeclaringType == typeof(DirectoryInfo) && info.Name != "FullPath")
         );
     }
 
-    [Fact]
-    public void TryParseAllTestFiles()
+    public static IEnumerable<object[]> BundledFiles =>
+        new DirectoryInfo("../../../TestTjas")
+            .EnumerateFiles()
+            .Select(file => new[] {file});
+
+    [Theory]
+    [MemberData(nameof(BundledFiles))]
+    public void ParseAllBundledFiles(FileInfo file)
     {
-        var dir = new DirectoryInfo("../../../TestTjas");
-        foreach (var file in dir.EnumerateFiles())
-        {
-            using var reader = file.OpenText();
-            var parsed = DotTja.Deserialize(reader);
-            this.testOutputHelper.WriteLine(parsed.ToString());
-        }
+        using var reader = file.OpenText();
+        var parsed = DotTja.Deserialize(reader);
+        this.testOutputHelper.WriteLine(parsed.ToString());
+    }
+
+    public static IEnumerable<object[]> EseTjaFiles =>
+        new DirectoryInfo("/home/huantian/Games/ESE/")
+            .EnumerateDirectories()
+            .SelectMany(category => category.EnumerateDirectories())
+            .SelectMany(songFolder => songFolder.EnumerateFiles())
+            .Where(file => file.Extension == ".tja")
+            .Select(file => new[] {file});
+
+    [Theory]
+    [MemberData(nameof(EseTjaFiles))]
+    public void ParseAllEseFiles(FileInfo file)
+    {
+        using var reader = file.OpenText();
+        DotTja.Deserialize(reader);
     }
 
     [Fact]
-    public void Test2()
+    public void CheckSpecific()
     {
         using var reader = new StreamReader("../../../TestTjas/Colorful Voice (Modified Metadata).tja");
         var parsed = DotTja.Deserialize(reader);
@@ -67,7 +85,7 @@ public class UnitTest1
                 MovieOffset = 1.5,
                 BgMovie = new FileInfo("Colorful Voice.mp4"),
                 TaikoWebSkin = new TaikoWebSkin(
-                    new DirectoryInfo("../song_skinsd"),
+                    new DirectoryInfo("../song_skins"),
                     "miku",
                     "static",
                     "none",

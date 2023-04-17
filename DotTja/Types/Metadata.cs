@@ -11,8 +11,8 @@ using Enums;
 /// </summary>
 public record Metadata
 {
-    public LocalizedString Title { get; init; }
-    public LocalizedString Subtitle { get; init; }
+    public LocalizedString Title { get; init; } = new();
+    public LocalizedString Subtitle { get; init; } = new();
     public double? Bpm { get; init; }
     public FileInfo? Wave { get; init; }
     public double? Offset { get; init; }

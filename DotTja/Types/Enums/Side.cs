@@ -1,10 +1,15 @@
 namespace DotTja.Types.Enums;
 
+using EnumConverter;
+
 public enum Side
 {
-    Normal = 1,
+    [EnumAlias("Normal", "1")]
+    Normal,
 #pragma warning disable CA1711
-    Ex = 2,
+    [EnumAlias("Ex", "2")]
+    Ex,
 #pragma warning restore CA1711
-    Both = 3
+    [EnumAlias("Both", "3")]
+    Both
 }

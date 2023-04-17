@@ -1,8 +1,9 @@
 namespace DotTja;
 
 using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
+using EnumConverter;
 using Exceptions;
 using Types;
 using Types.Builders;
@@ -76,67 +77,29 @@ internal static class Parser
         }
     }
 
-    public static void SetValue(
-        object owner,
-        string key,
-        string rawValue,
-        IReadOnlyDictionary<string, PropertyInfo> propertiesCache,
-        Func<string, object>? customParser = null
-    )
+    private static object StringToValue(string rawValue, Type targetType)
     {
-        var propertyInfo = propertiesCache.GetValueOrDefault(key) ?? throw new ArgumentException(
-            $"Can't find property for key '{key}' in type '{owner.GetType()}'.", nameof(key)
-        );
-
-        var existingValue = propertyInfo.GetValue(owner);
-        if (existingValue != null)
+        if (targetType == typeof(string))
         {
-            throw new DuplicateKeyException(key, existingValue, rawValue);
+            return rawValue;
         }
-
-        object parsedValue;
-
-        var propertyType = propertyInfo.PropertyType;
-        if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+        if (targetType == typeof(int))
         {
-            propertyType = propertyType.GetGenericArguments()[0];
+            return int.Parse(rawValue, CultureInfo.InvariantCulture);
         }
-
-        if (customParser != null)
+        if (targetType == typeof(double))
         {
-            parsedValue = customParser(rawValue);
+            return double.Parse(rawValue, CultureInfo.InvariantCulture);
         }
-        else if (propertyType == typeof(string))
+        if (targetType == typeof(FileInfo))
         {
-            parsedValue = rawValue;
+            return new FileInfo(rawValue);
         }
-        else if (propertyType == typeof(int))
+        if (targetType.IsEnum)
         {
-            if (int.TryParse(rawValue, out var result))
-            {
-                parsedValue = result;
-            }
-            else
-            {
-                throw new ParsingException($"Unable to parse value '{rawValue}' for key '{key}' as int.");
-            }
+            return EnumConverter.EnumConverter.Parse(targetType, rawValue);
         }
-        else if (propertyType == typeof(double))
-        {
-            if (double.TryParse(rawValue, out var result))
-            {
-                parsedValue = result;
-            }
-            else
-            {
-                throw new ParsingException($"Unable to parse value '{rawValue}' for key '{key}' as double.");
-            }
-        }
-        else if (propertyType == typeof(FileInfo))
-        {
-            parsedValue = new FileInfo(rawValue);
-        }
-        else if (propertyType == typeof(TaikoWebSkin))
+        if (targetType == typeof(TaikoWebSkin))
         {
             var pairs = rawValue
                 .Split(",")
@@ -154,7 +117,7 @@ internal static class Parser
                 )
                 .ToImmutableDictionary(p => p[0], p => p[1]);
 
-            parsedValue = new TaikoWebSkin(
+            return new TaikoWebSkin(
                 new DirectoryInfo(pairs["dir"]),
                 pairs["name"],
                 pairs.GetValueOrDefault("song"),
@@ -162,26 +125,47 @@ internal static class Parser
                 pairs.GetValueOrDefault("don")
             );
         }
-        else if (propertyType.IsEnum)
+
+        throw new ParsingException($"Internal error: no implementation to convert value to '{targetType}'");
+    }
+
+    private static void SetValue(
+        object owner,
+        string key,
+        string rawValue,
+        IReadOnlyDictionary<string, PropertyInfo> propertiesCache
+    )
+    {
+        var propertyInfo = propertiesCache.GetValueOrDefault(key) ?? throw new ArgumentException(
+            $"Can't find property for key '{key}' in type '{owner.GetType()}'.", nameof(key)
+        );
+
+        var existingValue = propertyInfo.GetValue(owner);
+        if (existingValue != null)
         {
-            if (Enum.TryParse(propertyType, rawValue, out var result))
-            {
-                Debug.Assert(result != null, nameof(result) + " != null");
-                parsedValue = result;
-            }
-            else
-            {
-                throw new ParsingException($"Unable to parse value '{rawValue}' for key '{key}' as Enum of type '{propertyType.Name}'.");
-            }
-        }
-        else
-        {
-            throw new ParsingException(
-                $"Internal error: attempted to set value of property with type '{propertyType} "
-                + "but no code was implemented for this type."
-            );
+            throw new DuplicateKeyException(key, existingValue, rawValue);
         }
 
-        propertyInfo.SetValue(owner, parsedValue);
+        // if (rawValue == "")
+        // {
+        //     throw new ParsingException("beans");
+        // }
+
+        var type = propertyInfo.PropertyType;
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+        {
+            type = type.GetGenericArguments()[0];
+        }
+
+        object converted;
+        try
+        {
+            converted = StringToValue(rawValue, type);
+        }
+        catch (Exception e)
+        {
+            throw new ParsingException($"Unable to parse value '{rawValue}' for key '{key}' as type '{type.Name}'.", e);
+        }
+        propertyInfo.SetValue(owner, converted);
     }
 }
