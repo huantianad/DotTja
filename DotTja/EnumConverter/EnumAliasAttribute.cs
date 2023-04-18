@@ -3,7 +3,7 @@ namespace DotTja.EnumConverter;
 using System.Collections.Immutable;
 
 [AttributeUsage(AttributeTargets.Field)]
-public class EnumAliasAttribute : Attribute
+public sealed class EnumAliasAttribute : Attribute
 {
     public string SerializedName { get; }
     public ImmutableList<string> Aliases { get; }

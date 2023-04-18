@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 using Commands;
 using Enums;
 
-public record CourseVariant
+public sealed record CourseVariant
 {
     public ImmutableList<int>? Balloon { get; init; }
     public ImmutableList<int>? BalloonNor { get; init; }

@@ -9,7 +9,7 @@ using Enums;
 /// as they are optional as defined in the spec. The exception to this is
 /// <see cref="Title"/> and <see cref="Subtitle"/> as those seem to be mandatory parts of metadata.
 /// </summary>
-public record Metadata
+public sealed record Metadata
 {
     public LocalizedString Title { get; init; } = new();
     public LocalizedString Subtitle { get; init; } = new();

@@ -3,7 +3,7 @@ namespace DotTja.Types.Builders;
 using System.Collections.Immutable;
 using System.Reflection;
 
-internal class LocalizedStringBuilder
+internal sealed class LocalizedStringBuilder
 {
     private string? Default { get; set; }
     private string? Ja { get; set; }

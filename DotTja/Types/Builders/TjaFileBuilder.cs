@@ -2,7 +2,7 @@ namespace DotTja.Types.Builders;
 
 using System.Collections.Immutable;
 
-internal class TjaFileBuilder
+internal sealed class TjaFileBuilder
 {
     public MetadataBuilder Metadata { get; } = new();
     public ImmutableList<Course>.Builder Courses { get; } = ImmutableList.CreateBuilder<Course>();

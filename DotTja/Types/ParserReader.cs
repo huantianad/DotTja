@@ -9,7 +9,7 @@ using Exceptions;
 /// Before reading anything, currentLine == null, LineNumber == 0
 ///
 /// </summary>
-public class ParserReader
+public sealed class ParserReader
 {
     private readonly TextReader textReader;
 

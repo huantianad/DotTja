@@ -1,6 +1,6 @@
 namespace DotTja.Types;
 
-public record TaikoWebSkin(
+public sealed record TaikoWebSkin(
     DirectoryInfo Dir,
     string Name,
     string? Song,

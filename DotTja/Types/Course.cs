@@ -2,7 +2,7 @@ namespace DotTja.Types;
 
 using Enums;
 
-public record Course
+public sealed record Course
 {
     public Difficulty? Difficulty { get; init; }
     public int? Stars { get; init; }

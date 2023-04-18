@@ -9,7 +9,7 @@ using Enums;
 using Exceptions;
 
 [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-internal class MetadataBuilder
+internal sealed class MetadataBuilder
 {
     public LocalizedStringBuilder Title { get; } = new();
     public LocalizedStringBuilder Subtitle { get; } = new();
