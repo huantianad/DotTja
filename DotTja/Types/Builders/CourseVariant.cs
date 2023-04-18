@@ -13,9 +13,7 @@ public sealed partial record CourseVariant
         public ImmutableList<int>? BalloonNor { get; set; }
         public ImmutableList<int>? BalloonExp { get; set; }
         public ImmutableList<int>? BalloonMas { get; set; }
-        /// <summary>
-        /// todo: explain this
-        /// </summary>
+        public ScoreMode? ScoreMode { get; set; }
         public (int normal, int? shinUchi)? ScoreInit { get; set; }
         public int? ScoreDiff { get; set; }
         public Style? Style { get; set; }
@@ -34,6 +32,7 @@ public sealed partial record CourseVariant
             BalloonNor = this.BalloonNor,
             BalloonExp = this.BalloonExp,
             BalloonMas = this.BalloonMas,
+            ScoreMode = this.ScoreMode,
             ScoreInit = this.ScoreInit,
             ScoreDiff = this.ScoreDiff,
             Style = this.Style,
