@@ -21,8 +21,8 @@ public sealed partial record Metadata
     public ScoreMode? ScoreMode { get; init; }
     public string? Maker { get; init; }
     public FileInfo? Lyrics { get; init; }
-    public double? SongVol { get; init; }
-    public double? SeVol { get; init; }
+    public int? SongVol { get; init; } // maybe double?
+    public int? SeVol { get; init; } // maybe double?
     public Side? Side { get; init; }
     public int? Life { get; init; }
     public Game? Game { get; init; }

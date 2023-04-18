@@ -13,7 +13,10 @@ public sealed partial record CourseVariant
         public ImmutableList<int>? BalloonNor { get; set; }
         public ImmutableList<int>? BalloonExp { get; set; }
         public ImmutableList<int>? BalloonMas { get; set; }
-        public int? ScoreInit { get; set; }
+        /// <summary>
+        /// todo: explain this
+        /// </summary>
+        public (int normal, int? shinUchi)? ScoreInit { get; set; }
         public int? ScoreDiff { get; set; }
         public Style? Style { get; set; }
         public DojoGauge? DojoGauge1 { get; set; }

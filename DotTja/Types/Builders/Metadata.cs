@@ -18,8 +18,8 @@ public sealed partial record Metadata
         private ScoreMode? ScoreMode { get; set; }
         private string? Maker { get; set; }
         private FileInfo? Lyrics { get; set; }
-        private double? SongVol { get; set; }
-        private double? SeVol { get; set; }
+        private int? SongVol { get; set; }
+        private int? SeVol { get; set; }
         private Side? Side { get; set; }
         private int? Life { get; set; }
         private Game? Game { get; set; }

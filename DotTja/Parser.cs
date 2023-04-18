@@ -160,7 +160,7 @@ internal static class Parser
             {
                 "0" => false,
                 "1" => true,
-                _ => throw new ParsingException($"Can't convert '{rawValue}' to bool.")
+                _ => throw new ParsingException($"Expected value '{rawValue}' to either be '0' or '1'.")
             };
         }
         if (targetType == typeof(int))
@@ -205,20 +205,23 @@ internal static class Parser
                 pairs.GetValueOrDefault("don")
             );
         }
-        if (targetType.IsGenericType)
+        if (targetType == typeof(ImmutableList<int>))
         {
-            var genericType = targetType.GetGenericTypeDefinition();
-            var arguments = targetType.GetGenericArguments();
-
-            // TODO: can I make this work for all ImmutableLists
-            if (genericType == typeof(ImmutableList<>) && arguments[0] == typeof(int))
+            return rawValue
+                .TrimEnd(',') // Remove possible trailing commas TODO: should this be strict
+                .Split(',')
+                .Select(StringToValue<int>)
+                .ToImmutableList();
+        }
+        if (targetType == typeof((int, int?)))
+        {
+            var split = rawValue.Split(',').Select(StringToValue<int>).ToImmutableList();
+            return split.Count switch
             {
-                return rawValue
-                    .TrimEnd(',') // Remove possible trailing commas TODO: should this be strict
-                    .Split(',')
-                    .Select(StringToValue<int>)
-                    .ToImmutableList();
-            }
+                1 => new ValueTuple<int, int?>(split[0], null),
+                2 => new ValueTuple<int, int?>(split[0], split[1]),
+                _ => throw new ParsingException($"Expected value '{rawValue}' to be of form 'int' or 'int,int'.")
+            };
         }
 
         throw new ParsingException($"Internal error: no implementation to convert value to '{targetType}'");
