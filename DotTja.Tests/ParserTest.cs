@@ -21,7 +21,8 @@ public class ParserTest
         );
     }
 
-    public static StreamReader TestFile(string name) => new StreamReader($"../../../TestTjas/{name}");
+    public static StreamReader TestFile(string name) => new($"../../../TestTjas/{name}");
+    public static StreamReader TestFileFailing(string name) => new($"../../../TestTjasFailing/{name}");
 
     public static IEnumerable<object[]> BundledFiles =>
         new DirectoryInfo("../../../TestTjas")
@@ -56,7 +57,7 @@ public class ParserTest
     [Fact]
     public void EarlyEndExceptions()
     {
-        using var reader = TestFile("Colorful Voice (No Course).tja");
+        using var reader = TestFileFailing("Colorful Voice (No Course).tja");
         reader.Invoking(DotTja.Deserialize).Should()
             .Throw<ParsingException>()
             .WithMessage("Encountered error while parsing at LineNumber = 14, CurrentLine = ''.")
