@@ -8,8 +8,8 @@ public sealed partial record Course
     {
         public Difficulty? Difficulty { get; set; }
         public int? Stars { get; set; }
-        public CourseVariant.Builder SingleCourse { get; set; } = new();
-        public CourseVariant.Builder DoubleCourse { get; set; } = new();
+        public CourseVariant.Builder SingleCourse { get; set; } = new() {Style = Style.Single};
+        public CourseVariant.Builder DoubleCourse { get; set; } = new() {Style = Style.Double};
 
         public Course ToCourse() => new()
         {

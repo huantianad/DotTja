@@ -7,11 +7,11 @@ public sealed partial record TjaFile
     internal sealed class Builder
     {
         public Metadata.Builder Metadata { get; } = new();
-        public List<Course.Builder> Courses { get; } = new();
+        public ImmutableList<Course>.Builder Courses { get; } = ImmutableList.CreateBuilder<Course>();
 
         public TjaFile ToTjaFile() => new(
             this.Metadata.ToMetadata(),
-            this.Courses.Select(b => b.ToCourse()).ToImmutableList()
+            this.Courses.ToImmutableList()
         );
     }
 }

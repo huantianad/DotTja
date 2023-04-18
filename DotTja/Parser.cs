@@ -1,10 +1,13 @@
 namespace DotTja;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using Exceptions;
 using Types;
+using Types.Commands;
+using Types.Enums;
 
 internal static class Parser
 {
@@ -14,19 +17,24 @@ internal static class Parser
 
         while (true)
         {
-            var (key, value) = reader.ReadKeyValuePair()
-                ?? throw new ParsingException("Encountered end of stream when parsing metadata.");
+            var (key, value) = reader.ReadKeyValuePair(
+                "Encountered end of stream when parsing metadata."
+            );
 
             if (key == "COURSE")
             {
+                reader.ReuseLastLine();
                 break;
             }
 
             ParseLineOfMainMetadata(result.Metadata, key, value);
         }
 
-
-
+        while (reader.PeekContentLine() != null)
+        {
+            var course = ParseCourse(reader);
+            result.Courses.Add(course);
+        }
 
         return result.ToTjaFile();
     }
@@ -53,11 +61,107 @@ internal static class Parser
         }
     }
 
+    private static Course ParseCourse(ParserReader reader)
+    {
+        var result = new Course.Builder();
+
+        (string, string) ReadKeyValuePair() =>
+            reader.ReadKeyValuePair("Encountered end of stream when parsing course metadata.");
+
+        // The first line of each Course should be COURSE:Difficulty
+        // Assume this is true and parse it separately
+        // This is especially important since in the next while loop, we use a COURSE key as a
+        // sign that the current Course section is ending and the next one is starting.
+        {
+            var (key, value) = ReadKeyValuePair();
+            if (key != "COURSE")
+            {
+                throw new ParsingException(
+                    $"Expected first key of course metadata to be COURSE, but it was '{key}:{value}' instead."
+                );
+            }
+
+            result.Difficulty = EnumConverter.EnumConverter.Parse<Difficulty>(value);
+        }
+
+        var activeVariant = result.SingleCourse;
+
+        while (true)
+        {
+            if (reader.PeekContentLine()?.StartsWith('#') ?? false)
+            {
+                activeVariant.Player1Commands = ParseSongSection(reader);
+
+                if (reader.PeekContentLine() == null)
+                {
+                    break;
+                }
+
+                // Don't go straight back to parsing metadata below, as there could be another
+                // start block (p2 start) immediately after a start (p1 start)
+                continue;
+            }
+
+            var (key, value) = ReadKeyValuePair();
+
+            if (key == "COURSE")
+            {
+                reader.ReuseLastLine();
+                break;
+            }
+            else if (key == "LEVEL")
+            {
+                result.Stars = int.Parse(value, CultureInfo.InvariantCulture);
+            }
+            else if (key == "STYLE")
+            {
+                var style = EnumConverter.EnumConverter.Parse<Style>(value);
+                activeVariant = style == Style.Single ? result.SingleCourse : result.DoubleCourse;
+            }
+            else if (key is "NOTESDESIGNER3" or "NOTESDESIGNER2" or "NOTESDESIGNRE3")
+            {
+                // TODO: Figure out what to do with this key that's taikocatscaffe only
+                continue;
+            }
+            else
+            {
+                SetValue(key, value, activeVariant, CourseVariant.Builder.Properties);
+            }
+        }
+
+        return result.ToCourse();
+    }
+
+    private static ImmutableList<Command> ParseSongSection(ParserReader reader)
+    {
+        Debug.Assert(reader.ReadContentLine().StartsWith("#START", StringComparison.InvariantCulture));
+        while (reader.ReadContentLine() != "#END")
+        {
+
+        }
+
+        return ImmutableList<Command>.Empty;
+    }
+
     private static object StringToValue(string rawValue, Type targetType)
     {
+        if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
+        {
+            targetType = targetType.GetGenericArguments()[0];
+        }
+
         if (targetType == typeof(string))
         {
             return rawValue;
+        }
+        if (targetType == typeof(bool))
+        {
+            return rawValue switch
+            {
+                "0" => false,
+                "1" => true,
+                _ => throw new ParsingException($"Can't convert '{rawValue}' to bool.")
+            };
         }
         if (targetType == typeof(int))
         {
@@ -101,9 +205,26 @@ internal static class Parser
                 pairs.GetValueOrDefault("don")
             );
         }
+        if (targetType.IsGenericType)
+        {
+            var genericType = targetType.GetGenericTypeDefinition();
+            var arguments = targetType.GetGenericArguments();
+
+            // TODO: can I make this work for all ImmutableLists
+            if (genericType == typeof(ImmutableList<>) && arguments[0] == typeof(int))
+            {
+                return rawValue
+                    .TrimEnd(',') // Remove possible trailing commas TODO: should this be strict
+                    .Split(',')
+                    .Select(StringToValue<int>)
+                    .ToImmutableList();
+            }
+        }
 
         throw new ParsingException($"Internal error: no implementation to convert value to '{targetType}'");
     }
+
+    private static T StringToValue<T>(string rawValue) => (T) StringToValue(rawValue, typeof(T));
 
     private static void SetValue(
         string key,
@@ -119,20 +240,22 @@ internal static class Parser
         var existingValue = propertyInfo.GetValue(owner);
         if (existingValue != null)
         {
+            if (existingValue.GetType().IsGenericType &&
+                existingValue.GetType().GetGenericTypeDefinition() == typeof(ImmutableList<>) &&
+                existingValue.GetType().GetGenericArguments()[0] == typeof(int))
+            {
+                existingValue = string.Join(",", (ImmutableList<int>) existingValue);
+            }
             throw new DuplicateKeyException(key, existingValue, rawValue);
         }
 
-        // if (rawValue == "")
-        // {
-        //     throw new ParsingException("beans");
-        // }
-
-        var type = propertyInfo.PropertyType;
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+        // TODO: Add strict mode for blank fields
+        if (rawValue == "")
         {
-            type = type.GetGenericArguments()[0];
+            return;
         }
 
+        var type = propertyInfo.PropertyType;
         object converted;
         try
         {
@@ -140,7 +263,9 @@ internal static class Parser
         }
         catch (Exception e)
         {
-            throw new ParsingException($"Unable to parse value '{rawValue}' for key '{key}' as type '{type.Name}'.", e);
+            throw new ParsingException(
+                $"Unable to parse value '{rawValue}' for key '{key}' as type '{type.Name}'.", e
+            );
         }
         propertyInfo.SetValue(owner, converted);
     }

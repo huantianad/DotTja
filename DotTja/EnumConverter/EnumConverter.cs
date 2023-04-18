@@ -73,6 +73,9 @@ public static class EnumConverter
     }
 
     [Pure]
+    public static T Parse<T>(string value) => (T) Parse(typeof(T), value);
+
+    [Pure]
     public static object Serialize(Enum enumValue)
     {
         var enumType = enumValue.GetType();

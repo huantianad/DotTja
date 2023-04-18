@@ -7,7 +7,7 @@ using Exceptions;
 /// Used for parsing convenience
 ///
 /// Before reading anything, currentLine == null, LineNumber == 0
-///
+/// After reading something, currentLine and LineNumber will be set to values of the last line read.
 /// </summary>
 public sealed class ParserReader
 {
@@ -46,8 +46,15 @@ public sealed class ParserReader
     }
 
     /// <summary>
-    /// Reads a line from <see cref="textReader"/> while also storing it in <see cref="CurrentLine"/>
-    /// and incrementing <see cref="LineNumber"/>.
+    /// <para>
+    ///     Reads a line from <see cref="textReader"/> while also storing it in <see cref="CurrentLine"/>
+    ///     and incrementing <see cref="LineNumber"/>.
+    /// </para>
+    /// <para>
+    ///     If <see cref="reusingLastLine"/> is set to true, then instead of reading a new line
+    ///     from the buffer, this will instead simply return the <see cref="CurrentLine"/>,
+    ///     and toggle <see cref="reusingLastLine"/> to false.
+    /// </para>
     /// </summary>
     /// <returns>The next line from <see cref="textReader"/>, or null if all characters have been read.</returns>
     private string? ReadLine()
@@ -68,8 +75,8 @@ public sealed class ParserReader
     /// Returns null if it reaches the end of the stream while doing so.
     /// </summary>
     /// <returns>The next non-empty and non-comment line in <see cref="textReader"/>,
-    /// or null if all characters have been read.</returns>
-    private string? ReadContentLine()
+    /// or null if all characters have been read, or if there are only empty/comment lines until end of file.</returns>
+    public string? ReadContentLine()
     {
         while (true)
         {
@@ -82,11 +89,29 @@ public sealed class ParserReader
 
             if (!string.IsNullOrWhiteSpace(line) && !IsComment(line))
             {
-                return line;
+                return line.Trim();
             }
         }
     }
 
+    /// <summary>
+    /// Same as <see cref="ReadContentLine"/> but doesn't advance the position in the stream.
+    /// Returns null if there are no more non-empty/non-comment lines until end of file.
+    /// </summary>
+    public string? PeekContentLine()
+    {
+        var line = this.ReadContentLine();
+        this.ReuseLastLine();
+        return line;
+    }
+
+    /// <summary>
+    /// Uses same logic as <see cref="ReadContentLine"/> to read the next line, then splits
+    /// it into a key value pair split by a ':'. Will return null if there are no more content
+    /// lines until the end of the file.
+    /// </summary>
+    /// <returns>Tuple of key and value, each trimmed. Null if no more lines.</returns>
+    /// <exception cref="ParsingException">Raised if next content line doesn't have a colon.</exception>
     public (string key, string value)? ReadKeyValuePair()
     {
         var line = this.ReadContentLine();
@@ -103,4 +128,13 @@ public sealed class ParserReader
 
         return (split[0].Trim(), split[1].Trim());
     }
+
+    /// <summary>
+    /// Same ase <see cref="ReadKeyValuePair()"/>, except it raises a <see cref="ParsingException"/>
+    /// instead of returning null.
+    /// </summary>
+    /// <param name="message">Message for the exception.</param>
+    /// <param name="exception">Optional inner exception.</param>
+    public (string key, string value) ReadKeyValuePair(string message, Exception? exception = null) =>
+        this.ReadKeyValuePair() ?? throw new ParsingException(message, exception);
 }
