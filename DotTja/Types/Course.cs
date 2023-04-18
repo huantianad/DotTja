@@ -1,13 +1,11 @@
 namespace DotTja.Types;
 
-using System.Collections.Immutable;
 using Enums;
 
-public record Course(
-    Difficulty Difficulty,
-    int Level,
-    ImmutableList<int> Balloon,
-    int ScoreInit,
-    int ScoreDiff
-
-);
+public record Course
+{
+    public Difficulty? Difficulty { get; init; }
+    public int? Stars { get; init; }
+    public CourseVariant SingleCourse { get; init; } = new();
+    public CourseVariant DoubleCourse { get; init; } = new();
+};

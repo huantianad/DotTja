@@ -26,6 +26,7 @@ internal static class Parser
             ParseLineOfMainMetadata(result.Metadata, key, value);
         }
 
+
         return result.ToTjaFile();
     }
 
