@@ -30,7 +30,7 @@ public class EnumConverterTest
     [InlineData("5", TestEnum.FooBar)]
     [InlineData("6", null)]
     [InlineData("23", TestEnum.Foo)]
-    public static void TestEnumAParsing(string value, TestEnum? expectedValue)
+    public static void TestEnumParsing(string value, TestEnum? expectedValue)
     {
         var func = () => (TestEnum) EnumConverter.Parse(typeof(TestEnum), value);
         if (expectedValue != null)
@@ -63,5 +63,31 @@ public class EnumConverterTest
                 .ThrowExactly<ArgumentOutOfRangeException>()
                 .WithMessage("Value out of range for enum 'TestEnum'.*");
         }
+    }
+
+    public enum BadTestEnum
+    {
+        [EnumAlias("Foo")]
+        Foo,
+        Bar,
+        FooBar
+    }
+
+    [Fact]
+    public static void ParseBadEnum()
+    {
+        var parse = () => EnumConverter.Parse(typeof(BadTestEnum), "Foo");
+        parse.Should()
+            .Throw<MissingEnumAliasException>()
+            .WithMessage("*BadTestEnum*Bar*");
+    }
+
+    [Fact]
+    public static void SerializeBadEnum()
+    {
+        var serialize = () => EnumConverter.Serialize(BadTestEnum.Bar);
+        serialize.Should()
+            .Throw<MissingEnumAliasException>()
+            .WithMessage("*BadTestEnum*Bar*");
     }
 }

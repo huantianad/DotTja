@@ -31,16 +31,20 @@ public static class EnumConverter
         SerializeCache[enumType] = new Dictionary<object, string>();
         DeserializeCache[enumType] = new Dictionary<string, object>();
 
-        foreach (var member in enumType.GetFields())
+        // Only include public static fields, those are the actual enum values
+        foreach (var member in enumType.GetFields(BindingFlags.Public | BindingFlags.Static))
         {
+            var enumValue = member.GetValue(null);
+            Debug.Assert(enumValue != null, nameof(enumValue) + " != null");
+
             var attribute = member.GetCustomAttribute<EnumAliasAttribute>(false);
             if (attribute == null)
             {
-                continue;
+                // Remove the enum from the cache because we're aborting the cache operation.
+                SerializeCache.Remove(enumType);
+                DeserializeCache.Remove(enumType);
+                throw new MissingEnumAliasException(enumType, enumValue);
             }
-
-            var enumValue = member.GetValue(null);
-            Debug.Assert(enumValue != null, nameof(enumValue) + " != null");
 
             SerializeCache[enumType][enumValue] = attribute.SerializedName;
             DeserializeCache[enumType][attribute.SerializedName] = enumValue;
