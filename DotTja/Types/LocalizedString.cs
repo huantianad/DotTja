@@ -5,7 +5,7 @@ namespace DotTja.Types;
 /// on the user's localization preferences. The <see cref="Default"/>
 /// string is required, but the localized values are not.
 /// </summary>
-public sealed record LocalizedString
+public sealed partial record LocalizedString
 {
     /// <summary>
     /// Default value used if the user's current language does not have a

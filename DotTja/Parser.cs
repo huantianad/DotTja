@@ -5,13 +5,12 @@ using System.Globalization;
 using System.Reflection;
 using Exceptions;
 using Types;
-using Types.Builders;
 
 internal static class Parser
 {
     public static TjaFile Deserialize(ParserReader reader)
     {
-        var result = new TjaFileBuilder();
+        var result = new TjaFile.Builder();
 
         while (true)
         {
@@ -30,25 +29,25 @@ internal static class Parser
         return result.ToTjaFile();
     }
 
-    private static void ParseLineOfMainMetadata(MetadataBuilder metadata, string key, string value)
+    private static void ParseLineOfMainMetadata(Metadata.Builder metadata, string key, string value)
     {
         if (key.StartsWith("TITLE", StringComparison.InvariantCulture))
         {
             var languageKey = key == "TITLE"
                 ? "DEFAULT"
                 : key["TITLE".Length..];
-            SetValue(languageKey, value, metadata.Title, LocalizedStringBuilder.Properties);
+            SetValue(languageKey, value, metadata.Title, LocalizedString.Builder.Properties);
         }
         else if (key.StartsWith("SUBTITLE", StringComparison.InvariantCulture))
         {
             var languageKey = key == "SUBTITLE"
                 ? "DEFAULT"
                 : key["SUBTITLE".Length..];
-            SetValue(languageKey, value, metadata.Subtitle, LocalizedStringBuilder.Properties);
+            SetValue(languageKey, value, metadata.Subtitle, LocalizedString.Builder.Properties);
         }
         else
         {
-            SetValue(key, value, metadata, MetadataBuilder.Properties);
+            SetValue(key, value, metadata, Metadata.Builder.Properties);
         }
     }
 

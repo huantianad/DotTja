@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 using Commands;
 using Enums;
 
-public sealed record CourseVariant
+public sealed partial record CourseVariant
 {
     public ImmutableList<int>? Balloon { get; init; }
     public ImmutableList<int>? BalloonNor { get; init; }
@@ -19,6 +19,6 @@ public sealed record CourseVariant
     public GaugeIncrementMethod? GaugeIncr { get; init; }
     public int? Total { get; init; } // maybe int?
     public bool? HiddenBranch { get; init; }
-    public ImmutableList<Command> Player1Commands { get; init; } = ImmutableList.Create<Command>();
+    public ImmutableList<Command>? Player1Commands { get; init; } // maybe this shouldn't be nullable
     public ImmutableList<Command>? Player2Commands { get; init; }
 }

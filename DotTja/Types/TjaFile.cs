@@ -2,7 +2,7 @@ namespace DotTja.Types;
 
 using System.Collections.Immutable;
 
-public sealed record TjaFile(
+public sealed partial record TjaFile(
     Metadata Metadata,
     ImmutableList<Course> Courses
 );
