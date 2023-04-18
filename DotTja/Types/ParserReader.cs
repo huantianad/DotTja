@@ -12,6 +12,7 @@ using Exceptions;
 public sealed class ParserReader
 {
     private readonly TextReader textReader;
+    private bool reusingLastLine;
 
     public string? CurrentLine { get; private set; }
     public int LineNumber { get; private set; }
@@ -27,12 +28,36 @@ public sealed class ParserReader
         line.TrimStart().StartsWith("//", StringComparison.InvariantCulture);
 
     /// <summary>
+    /// Tells the <see cref="ParserReader"/> to reuse the current line instead of
+    /// reading a new line the next time <see cref="ReadLine"/> is called.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    ///     Thrown if called twice in a row without a <see cref="ReadLine"/> in between.
+    /// </exception>
+    public void ReuseLastLine()
+    {
+        if (this.reusingLastLine)
+        {
+            throw new InvalidOperationException(
+                $"Called {nameof(this.ReuseLastLine)} while already set to reuse last line."
+            );
+        }
+        this.reusingLastLine = true;
+    }
+
+    /// <summary>
     /// Reads a line from <see cref="textReader"/> while also storing it in <see cref="CurrentLine"/>
     /// and incrementing <see cref="LineNumber"/>.
     /// </summary>
     /// <returns>The next line from <see cref="textReader"/>, or null if all characters have been read.</returns>
     private string? ReadLine()
     {
+        if (this.reusingLastLine)
+        {
+            this.reusingLastLine = false;
+            return this.CurrentLine;
+        }
+
         this.CurrentLine = this.textReader.ReadLine();
         this.LineNumber++;
         return this.CurrentLine;

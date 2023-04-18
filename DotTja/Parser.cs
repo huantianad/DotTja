@@ -26,6 +26,8 @@ internal static class Parser
         }
 
 
+
+
         return result.ToTjaFile();
     }
 
